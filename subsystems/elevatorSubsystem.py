@@ -1,5 +1,5 @@
 from commands2 import Subsystem
-import wpilib
+import wpimath
 import rev
 
 class ElevatorSubsystem(Subsystem):
@@ -9,8 +9,12 @@ class ElevatorSubsystem(Subsystem):
         Current Limiting on both ends
         Specify a height threshold
         """
-        TOP_SPARK_ID, BOTTOM_SPARK_ID = -1, -1
-        CURRENT_LIMIT_THRESHOLD = -1
+        TOP_SPARK_ID, BOTTOM_SPARK_ID = 10, 11
+        CURRENT_LIMIT_THRESHOLD = 40
+
+        self.pid_controller = wpimath.controller.PIDController(0.05, 0.0, 0.0)
+        self.slewLimit = 0.1
+        self.last_output = 0
         
         self.topSpark = rev.SparkMax(TOP_SPARK_ID, rev.SparkMax.MotorType.kBrushless)
         self.topSpark.configure(
@@ -18,14 +22,45 @@ class ElevatorSubsystem(Subsystem):
             rev.SparkBase.ResetMode.kResetSafeParameters,
             rev.SparkBase.PersistMode.kPersistParameters
         )
+# Syncs the two elevator motors
+        motor_config_follower = (
+            rev.SparkMaxConfig().follow(self.topSpark, True)
+        )
 
-        self.bottomSpark = rev.SparkMax(BOTTOM_SPARK_ID)
+        self.bottomSpark = rev.SparkMax(BOTTOM_SPARK_ID, rev.SparkMax.MotorType.kBrushless)
         self.bottomSpark.configure(
-            rev.SparkMaxConfig().smartCurrentLimit(CURRENT_LIMIT_THRESHOLD).inverted(True),
+            motor_config_follower,
             rev.SparkBase.ResetMode.kResetSafeParameters,
             rev.SparkBase.PersistMode.kPersistParameters
         )
-    def getAngle(self) -> float:
-        pass
+
+        self.elevator = self.topSpark
+        self.encoder = self.elevator.getEncoder()
+        self.encoder.setPosition(0)
+        self.desiredPosition = self.encoder
+
+    def elevatorUp(self):
+        self.elevator.set(0.2)
+
+    def elevatorDown(self):
+        self.elevator.set(-0.2)
+
+    def stop(self):
+        self.elevator.set(0)
+        self.desiredPosition = self.encoder.getPosition()
+
+    def setPosition(self):
+        currentPosition = self.encoder.getPosition()
+        self.pid_controller.setSetpoint(self.desiredPosition)
+        pid_output = self.pid_controller.calculate(currentPosition)
+
+        delta = pid_output - self.last_output
+        if delta > self.slewLimit:
+            pid_output = self.last_output + self.slewLimit
+        elif delta < -self.slewLimit:
+            pid_output = self.last_output - self.slewLimit
+
+        self.elevator.set(pid_output)
+        self.last_output = pid_output
         
 
