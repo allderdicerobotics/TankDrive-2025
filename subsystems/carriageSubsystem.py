@@ -5,7 +5,7 @@ import wpimath
 class CarriageSubsystem(Subsystem):
     def __init__(self):
         SPARK_ID = 20
-        CURRENT_LIMIT_THRESHOLD = 10
+        CURRENT_LIMIT_THRESHOLD = 5
         self.motor = rev.SparkMax(SPARK_ID, rev.SparkMax.MotorType.kBrushless)
         self.pid_controller = wpimath.controller.PIDController(0.05, 0.0, 0.0)
         self.slewLimit = 0.1

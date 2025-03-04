@@ -143,8 +143,10 @@ class Robot(wpilib.TimedRobot):
         elif self.controller.getCrossButtonPressed():
             self.carriage.desiredAngle = self.carriagePositionDown
 
-        print("Elev " + str(self.elevator.encoder.getPosition()))
-        print("Carr " + str(self.carriage.encoder.getPosition()))
+
+        print("Elevator " + str(self.elevator.topSpark.getOutputCurrent()))
+        print("Carriage " + str(self.carriage.motor.getOutputCurrent()))
+        print("Intake " + str(self.intake.intake.getOutputCurrent()))
 
 
 if __name__ == "__main__":
