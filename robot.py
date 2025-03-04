@@ -10,7 +10,8 @@ import wpilib           # Used to get the joysticks
 import wpimath          # Used to limit joystick speeds
 import wpilib.drive     # Used for the DifferentialDrive class
 import rev
-import wpimath.filter              # REV library
+import wpimath.filter            # REV library
+import time
 
 
 class Robot(wpilib.TimedRobot):
@@ -25,33 +26,51 @@ class Robot(wpilib.TimedRobot):
         self.DPadLEFT = 270
         self.DPadUNPRESSED = -1
 
-        self.carriagePositionUp = 150
-        self.carriagePositionDown = 100
-        self.elevatorPositionUp = 150
-        self.elevatorPositionDown = 100
-        self.autoDistance = 100
+        self.carriagePositionUp = 0.52
+        self.carriagePositionDown = 0.31
+        self.carriagePositionStow = 0.47
+        
+        self.elevatorPositionDown = 0
+        self.elevatorPositionProcessor = 8.83
+        self.elevatorPositionAlgaeOnCoral = 12.92
+        self.elevatorPositionAlgaeOnReef1 = 31.5
+        self.elevatorPositionAlgaeOnReef2 = 45
+        self.elevatorPositionBarge = 50
+        self.autoDistance = 50
 
         self.drive = DriveSubsystem()
         self.intake = IntakeSubsystem()
         self.elevator = ElevatorSubsystem()
         self.carriage = CarriageSubsystem()
         self.controller = wpilib.PS4Controller(0)
+        self.operatorBoard = wpilib.Joystick(1)
 
         #Sets the initial angle of all encoders to be wherever they are at the start
         self.carriage.desiredAngle = self.carriage.encoder.getPosition()
         self.elevator.desiredPosition = self.elevator.encoder.getPosition()
 
+        self.forward_limit = self.elevator.topSpark.getForwardLimitSwitch()
+        self.reverse_limit = self.elevator.topSpark.getReverseLimitSwitch()
+        self.limit_sticky = False
+        self.elevator_active = False
+
     def autonomousInit(self):
+        self.drive.leftDriveFront.getEncoder().setPosition(0)
         self.drive.setAutoGoal(self.autoDistance)
     
     def autonomousPeriodic(self):
         self.drive.auto()
 
+    def teleopInit(self):
+        self.elevator.encoder.setPosition(0)
+        self.carriage.desiredAngle = self.carriage.encoder.getPosition()
+        self.elevator.desiredPosition = 0
+
     def teleopPeriodic(self):
         """This function is called periodically during teleoperated mode."""
-        print("Carriage: " + str(self.carriage.encoder.getPosition()))
-        print("Elevator: " + str(self.elevator.encoder.getPosition()))
-        print("Drive: " + str(self.drive.leftDriveFront.getEncoder().getPosition()))
+        # print("Carriage: " + str(self.carriage.encoder.getPosition()))
+        # print("Elevator: " + str(self.elevator.encoder.getPosition()))
+        # print("Drive: " + str(self.drive.leftDriveFront.getEncoder().getPosition()))
 
         #Basic Drive command
         self.drive.arcadeDrive(self.controller.getLeftY(), self.controller.getRightX())
@@ -63,33 +82,52 @@ class Robot(wpilib.TimedRobot):
         if self.controller.getL1ButtonPressed():
             self.intake.runOuttake()
         
-        if self.controller.getR1ButtonReleased() or self.controller.getL1ButtonPressed():
+        if self.controller.getR1ButtonReleased():
             self.intake.stop()
 
         #Elevator commands
         if self.controller.getPOV() == self.DPadUP:
             self.elevator.elevatorUp()
+            self.elevator_active = True
         elif self.controller.getPOV() == self.DPadDOWN:
             self.elevator.elevatorDown()
+            self.elevator_active = True
+        elif self.operatorBoard.getRawButtonPressed(1):
+            self.elevator.desiredPosition = self.elevatorPositionDown
+        elif self.operatorBoard.getRawButtonPressed(6):
+            self.elevator.desiredPosition = self.elevatorPositionProcessor
+        elif self.operatorBoard.getRawButtonPressed(9):
+            self.elevator.desiredPosition = self.elevatorPositionAlgaeOnCoral
+        elif self.operatorBoard.getRawButtonPressed(10):
+            self.elevator.desiredPosition = self.elevatorPositionAlgaeOnReef1
+        elif self.operatorBoard.getRawButtonPressed(11):
+            self.elevator.desiredPosition = self.elevatorPositionAlgaeOnReef2
+        elif self.operatorBoard.getRawButtonPressed(12):
+            self.elevator.desiredPosition = self.elevatorPositionBarge
         else:
-            self.elevator.setPosition()
-        
-        if self.controller.getPOV() == self.DPadUNPRESSED:
+            if self.elevator_active:
+                self.elevator.stop()
+                self.elevator_active = False
+            else:
+                self.elevator.setPosition()
+
+        if self.reverse_limit.get() and not self.limit_sticky:
+            self.limit_sticky = True
+            self.elevator.reset()
             self.elevator.stop()
 
-        if self.controller.getPOV() == self.DPadRIGHT:
-            self.elevator.desiredPosition = self.elevatorPositionUp
-        
-        if self.controller.getPOV() == self.DPadLEFT:
-            self.elevator.desiredPosition = self.elevatorPositionDown
+        if not self.reverse_limit.get():
+            self.limit_sticky = False
+
+        #print(self.reverse_limit.get())
         
         #Carriage commands
         if self.controller.getR2Button():
             self.carriage.clockwise()
         elif self.controller.getL2Button():
             self.carriage.counterClockwise()
-        else:
-            self.carriage.setAngle() 
+        #else:
+            #self.carriage.setAngle() 
 
         if self.controller.getR2ButtonReleased():
             self.carriage.stop()
@@ -97,11 +135,16 @@ class Robot(wpilib.TimedRobot):
         if self.controller.getL2ButtonReleased():
             self.carriage.stop()
 
-        if self.controller.getSquareButtonPressed():
+        if self.controller.getTriangleButtonPressed():
             self.carriage.desiredAngle = self.carriagePositionUp
-        
-        if self.controller.getCircleButtonPressed():
+        elif self.controller.getSquareButtonPressed():
+            self.carriage.desiredAngle = self.carriagePositionStow
+        elif self.controller.getCrossButtonPressed():
             self.carriage.desiredAngle = self.carriagePositionDown
+
+        print("Elev " + str(self.elevator.encoder.getPosition()))
+        print("Carr " + str(self.carriage.encoder.getPosition()))
+
 
 if __name__ == "__main__":
     wpilib.run(Robot)

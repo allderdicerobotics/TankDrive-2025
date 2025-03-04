@@ -6,8 +6,8 @@ import wpimath
 
 class DriveSubsystem(Subsystem):
     def __init__(self):
-        self.filter = SlewRateLimiter(1)
-        self.pid_controller = wpimath.controller.PIDController(0.05, 0.0, 0.0)
+        self.filter = SlewRateLimiter(2.5)
+        self.pid_controller = wpimath.controller.PIDController(0.010, 0.0, 0.0)
         self.last_output = 0
 
         self.leftDriveFront = rev.SparkMax(4, rev.SparkMax.MotorType.kBrushless)
@@ -60,7 +60,7 @@ class DriveSubsystem(Subsystem):
 
     def arcadeDriveNoSlew(self, speed, rotation):
         # Use DifferentialDrive to control the robot
-        self.robotDrive.arcadeDrive(pow(speed,3), -pow(rotation, 3))
+        self.robotDrive.arcadeDrive(speed, rotation)
 
     def setAutoGoal(self, distance):
         self.autoDistance = distance
@@ -70,9 +70,9 @@ class DriveSubsystem(Subsystem):
         self.pid_controller.setSetpoint(-self.autoDistance)
         pid_output = self.pid_controller.calculate(currentPosition)
 
-        print("Curr: " + str(currentPosition))
-        print("Auto: " + str(-self.autoDistance))
-        print("PID: " + str(pid_output))
+        delta = pid_output - self.last_output
+        if delta > self.slewLimit:
+            pid_output = self.last_output + self.slewLimit
 
         self.arcadeDriveNoSlew(pid_output, 0)
         self.last_output = pid_output

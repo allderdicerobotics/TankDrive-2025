@@ -8,6 +8,7 @@ class IntakeSubsystem(Subsystem):
         CURRENT_LIMIT_THRESHOLD = 40
 
         self.intake = rev.SparkMax(SPARK_ID, rev.SparkMax.MotorType.kBrushless)
+        self.stop()
 
         self.intake.configure(
             rev.SparkMaxConfig().smartCurrentLimit(CURRENT_LIMIT_THRESHOLD).inverted(True),
@@ -17,7 +18,6 @@ class IntakeSubsystem(Subsystem):
 
     def runIntake(self):
        self.intake.set(1)
-       
 
     def runOuttake(self):
         self.intake.set(-1)
