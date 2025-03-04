@@ -7,7 +7,7 @@ import wpimath
 class DriveSubsystem(Subsystem):
     def __init__(self):
         self.filter = SlewRateLimiter(2.5)
-        self.pid_controller = wpimath.controller.PIDController(0.010, 0.0, 0.0)
+        self.pid_controller = wpimath.controller.PIDController(0.02, 0.0, 0.0)
         self.last_output = 0
 
         self.leftDriveFront = rev.SparkMax(4, rev.SparkMax.MotorType.kBrushless)

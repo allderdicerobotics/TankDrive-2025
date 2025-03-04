@@ -100,6 +100,7 @@ class Robot(wpilib.TimedRobot):
             self.elevator.desiredPosition = self.elevatorPositionAlgaeOnCoral
         elif self.operatorBoard.getRawButtonPressed(10):
             self.elevator.desiredPosition = self.elevatorPositionAlgaeOnReef1
+            
         elif self.operatorBoard.getRawButtonPressed(11):
             self.elevator.desiredPosition = self.elevatorPositionAlgaeOnReef2
         elif self.operatorBoard.getRawButtonPressed(12):
