@@ -26,15 +26,15 @@ class Robot(wpilib.TimedRobot):
         self.DPadLEFT = 270
         self.DPadUNPRESSED = -1
 
-        self.carriagePositionUp = 0.52
-        self.carriagePositionDown = 0.31
-        self.carriagePositionStow = 0.47
+        self.carriagePositionUp = 0.34
+        self.carriagePositionDown = .143
+        self.carriagePositionStow = 0.29
         
         self.elevatorPositionDown = 0
         self.elevatorPositionProcessor = 8.83
         self.elevatorPositionAlgaeOnCoral = 12.92
         self.elevatorPositionAlgaeOnReef1 = 31.5
-        self.elevatorPositionAlgaeOnReef2 = 45
+        self.elevatorPositionAlgaeOnReef2 = 53
         self.elevatorPositionBarge = 50
         self.autoDistance = 50
 
@@ -44,6 +44,9 @@ class Robot(wpilib.TimedRobot):
         self.carriage = CarriageSubsystem()
         self.controller = wpilib.PS4Controller(0)
         self.operatorBoard = wpilib.Joystick(1)
+
+        self.atUpperHardStop = False
+        self.atLowerHardStop = False
 
         #Sets the initial angle of all encoders to be wherever they are at the start
         self.carriage.desiredAngle = self.carriage.encoder.getPosition()
@@ -115,38 +118,52 @@ class Robot(wpilib.TimedRobot):
         if self.reverse_limit.get() and not self.limit_sticky:
             self.limit_sticky = True
             self.elevator.reset()
+            print("Activated")
             self.elevator.stop()
 
         if not self.reverse_limit.get():
             self.limit_sticky = False
 
-        #print(self.reverse_limit.get())
+        print(self.reverse_limit.get())
+        print("Position" + str(self.elevator.encoder.getPosition()))
         
         #Carriage commands
-        if self.controller.getR2Button():
-            self.carriage.clockwise()
-        elif self.controller.getL2Button():
-            self.carriage.counterClockwise()
-        #else:
-            #self.carriage.setAngle() 
+        if self.carriage.motor.getOutputCurrent() < 15:
+            self.atLowerHardStop = False
+            self.atUpperHardStop = False
+            if self.controller.getR2Button():
+                self.carriage.clockwise()
+            elif self.controller.getL2Button():
+                self.carriage.counterClockwise()
+            else:
+                self.carriage.setAngle() 
 
-        if self.controller.getR2ButtonReleased():
-            self.carriage.stop()
-        
-        if self.controller.getL2ButtonReleased():
-            self.carriage.stop()
+            if self.controller.getR2ButtonReleased() or self.controller.getL2ButtonReleased():
+                self.carriage.stop()
 
-        if self.controller.getTriangleButtonPressed():
-            self.carriage.desiredAngle = self.carriagePositionUp
-        elif self.controller.getSquareButtonPressed():
-            self.carriage.desiredAngle = self.carriagePositionStow
-        elif self.controller.getCrossButtonPressed():
-            self.carriage.desiredAngle = self.carriagePositionDown
+            if self.controller.getTriangleButtonPressed():
+                self.carriage.desiredAngle = self.carriagePositionUp
+            elif self.controller.getSquareButtonPressed():
+                self.carriage.desiredAngle = self.carriagePositionStow
+            elif self.controller.getCrossButtonPressed():
+                self.carriage.desiredAngle = self.carriagePositionDown
 
+        #turns motor power to 0 if current limit surpassed. In future, try to make it go to a safe position if this is triggered
+        elif self.carriage.encoder.getPosition() < .145:
+            self.atLowerHardStop = True
+            self.carriage.motor.set(0)
+            # print("Lower limit activated")
 
-        print("Elevator " + str(self.elevator.topSpark.getOutputCurrent()))
-        print("Carriage " + str(self.carriage.motor.getOutputCurrent()))
-        print("Intake " + str(self.intake.intake.getOutputCurrent()))
+        elif self.carriage.encoder.getPosition() > .38:
+            self.atUpperrHardStop = True
+            self.carriage.motor.set(0)
+            # print("Upper limit activated")
+    
+
+        # print("Elevator " + str(self.elevator.topSpark.getOutputCurrent()))
+        # print("Carriage current " + str(self.carriage.motor.getOutputCurrent()))
+        # print("Intake " + str(self.intake.intake.getOutputCurrent()))
+        # print("Carriage position " + str(self.carriage.encoder.getPosition()))
 
 
 if __name__ == "__main__":
