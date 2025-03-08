@@ -58,6 +58,14 @@ class DriveSubsystem(Subsystem):
         # Use DifferentialDrive to control the robot
         self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3)), -pow(rotation, 3)/2)
 
+    def extendedArcadeDrive1(self, speed, rotation):
+        # Use DifferentialDrive to control the robot
+        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3))/4, -pow(rotation, 3)/3)
+    
+    def extendedArcadeDrive2(self, speed, rotation):
+        # Use DifferentialDrive to control the robot
+        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3))/5, -pow(rotation, 3)/4)
+
     def arcadeDriveNoSlew(self, speed, rotation):
         # Use DifferentialDrive to control the robot
         self.robotDrive.arcadeDrive(speed, rotation)

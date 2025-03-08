@@ -26,7 +26,7 @@ class Robot(wpilib.TimedRobot):
         self.DPadLEFT = 270
         self.DPadUNPRESSED = -1
 
-        self.carriagePositionUp = 0.34
+        self.carriagePositionUp = 0.36
         self.carriagePositionDown = .143
         self.carriagePositionStow = 0.29
         
@@ -35,7 +35,7 @@ class Robot(wpilib.TimedRobot):
         self.elevatorPositionAlgaeOnCoral = 12.92
         self.elevatorPositionAlgaeOnReef1 = 31.5
         self.elevatorPositionAlgaeOnReef2 = 53
-        self.elevatorPositionBarge = 50
+        self.elevatorPositionBarge = 53
         self.autoDistance = 50
 
         self.drive = DriveSubsystem()
@@ -76,7 +76,17 @@ class Robot(wpilib.TimedRobot):
         # print("Drive: " + str(self.drive.leftDriveFront.getEncoder().getPosition()))
 
         #Basic Drive command
-        self.drive.arcadeDrive(self.controller.getLeftY(), self.controller.getRightX())
+        if self.elevator.encoder.getPosition() < 22:
+            self.drive.arcadeDrive(self.controller.getLeftY(), self.controller.getRightX())
+            print("normal")
+        elif self.elevator.encoder.getPosition() >= 22 and self.elevator.encoder.getPosition() < 40:
+            self.drive.extendedArcadeDrive1(self.controller.getLeftY(), self.controller.getRightX())
+            print("extended")
+        elif self.elevator.encoder.getPosition() >= 40:
+            self.drive.extendedArcadeDrive1(self.controller.getLeftY(), self.controller.getRightX())
+            print("hyper-extended")
+
+
 
         #Intake commands
         if self.controller.getR1ButtonPressed():

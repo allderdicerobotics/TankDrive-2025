@@ -5,7 +5,7 @@ import rev
 class IntakeSubsystem(Subsystem):
     def __init__(self):
         SPARK_ID = 2
-        CURRENT_LIMIT_THRESHOLD = 40
+        CURRENT_LIMIT_THRESHOLD = 25
 
         self.intake = rev.SparkMax(SPARK_ID, rev.SparkMax.MotorType.kBrushless)
         self.stop()
