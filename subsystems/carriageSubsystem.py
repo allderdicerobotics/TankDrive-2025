@@ -8,7 +8,7 @@ class CarriageSubsystem(Subsystem):
         CURRENT_LIMIT_THRESHOLD = 15
 
         self.motor = rev.SparkMax(SPARK_ID, rev.SparkMax.MotorType.kBrushless)
-        self.pid_controller = wpimath.controller.PIDController(3.4, 0.2, 0.0)
+        self.pid_controller = wpimath.controller.PIDController(5.7, 1.0, 0.0)
         self.slewLimit = 0.1
         self.last_output = 0
 
@@ -47,3 +47,7 @@ class CarriageSubsystem(Subsystem):
     def hardCurrentLimit(self):
         if float(self.motor.getOutputCurrent) > 20:
             self.motor.set(0)
+
+    def autoCarriage(self, angle):
+        self.desiredAngle = angle
+        self.setAngle()

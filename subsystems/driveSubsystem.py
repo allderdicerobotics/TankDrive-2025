@@ -6,8 +6,8 @@ import wpimath
 
 class DriveSubsystem(Subsystem):
     def __init__(self):
-        self.filter = SlewRateLimiter(2.5)
-        self.pid_controller = wpimath.controller.PIDController(0.02, 0.0, 0.0)
+        self.filter = SlewRateLimiter(2.0)
+        self.pid_controller = wpimath.controller.PIDController(0.04, 0.0005, 0.0)
         self.last_output = 0
 
         self.leftDriveFront = rev.SparkMax(4, rev.SparkMax.MotorType.kBrushless)
@@ -56,24 +56,29 @@ class DriveSubsystem(Subsystem):
 
     def arcadeDrive(self, speed, rotation):
         # Use DifferentialDrive to control the robot
-        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3)), -pow(rotation, 3)/2)
+        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3)) * .8, -pow(rotation, 3)/2)
 
     def extendedArcadeDrive1(self, speed, rotation):
         # Use DifferentialDrive to control the robot
-        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3))/4, -pow(rotation, 3)/3)
-    
+        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3))/2, -pow(rotation, 3)/3)
+
     def extendedArcadeDrive2(self, speed, rotation):
         # Use DifferentialDrive to control the robot
-        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3))/5, -pow(rotation, 3)/4)
+        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3))/3.25, -pow(rotation, 3)/3)
+    
+    def extendedArcadeDrive3(self, speed, rotation):
+        # Use DifferentialDrive to control the robot
+        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3))/3.75, -pow(rotation, 3)/3)
 
     def arcadeDriveNoSlew(self, speed, rotation):
         # Use DifferentialDrive to control the robot
         self.robotDrive.arcadeDrive(speed, rotation)
 
+
     def setAutoGoal(self, distance):
         self.autoDistance = distance
 
-    def auto(self):
+    def autoDrive(self):
         currentPosition = self.leftDriveFront.getEncoder().getPosition()
         self.pid_controller.setSetpoint(-self.autoDistance)
         pid_output = self.pid_controller.calculate(currentPosition)
@@ -82,5 +87,5 @@ class DriveSubsystem(Subsystem):
         if delta > self.slewLimit:
             pid_output = self.last_output + self.slewLimit
 
-        self.arcadeDriveNoSlew(pid_output, 0)
+        self.arcadeDriveNoSlew(.75 * pid_output, 0)
         self.last_output = pid_output

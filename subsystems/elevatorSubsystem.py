@@ -13,7 +13,7 @@ class ElevatorSubsystem(Subsystem):
         TOP_SPARK_ID, BOTTOM_SPARK_ID = 10, 11
         CURRENT_LIMIT_THRESHOLD = 40
 
-        self.pid_controller = wpimath.controller.PIDController(0.025, 0.0, 0.0)
+        self.pid_controller = wpimath.controller.PIDController(0.025, 0.001, 0.0)
         self.slewLimit = 0.1
         self.last_output = 0
         
@@ -43,6 +43,8 @@ class ElevatorSubsystem(Subsystem):
 
         self.slew_rate_limiter = SlewRateLimiter(.75)
 
+        self.elevator.set(0)
+
     def elevatorUp(self):
         self.elevator.set(.2)
 
@@ -71,6 +73,19 @@ class ElevatorSubsystem(Subsystem):
         #print("Curr: " + str(currentPosition))
         #print("Desired: " + str(self.desiredPosition))
         #print("PID: " + str(pid_output))
+
+        self.elevator.set(pid_output)
+        self.last_output = pid_output
+
+    def autoElevUp(self, height):
+        currentPosition = self.encoder.getPosition()
+        self.pid_controller.setSetpoint(height)
+
+        pid_output = self.pid_controller.calculate(currentPosition)
+
+        delta = pid_output - self.last_output
+        if delta > self.slewLimit:
+            pid_output = self.last_output + self.slewLimit
 
         self.elevator.set(pid_output)
         self.last_output = pid_output
