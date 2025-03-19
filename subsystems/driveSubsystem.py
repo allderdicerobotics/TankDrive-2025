@@ -3,11 +3,13 @@ import rev
 import wpilib
 from wpimath.filter import SlewRateLimiter
 import wpimath
+from subsystems.distanceSensor import DistanceSensor
+import time
 
 class DriveSubsystem(Subsystem):
     def __init__(self):
         self.filter = SlewRateLimiter(2.0)
-        self.pid_controller = wpimath.controller.PIDController(0.04, 0.0005, 0.0)
+        self.pid_controller = wpimath.controller.PIDController(0.0004, 0.0001, 0.0)
         self.last_output = 0
 
         self.leftDriveFront = rev.SparkMax(4, rev.SparkMax.MotorType.kBrushless)
@@ -51,41 +53,49 @@ class DriveSubsystem(Subsystem):
         # result in both sides moving forward. Depending on how your robot's
         # gearbox is constructed, you might have to invert the left side instead.
         self.right.setInverted(True)
-        self.slewLimit = 0.1
+        self.slewLimit = 0.05
         self.leftDriveFront.getEncoder().setPosition(0)
+
+        self.distanceSensor = DistanceSensor()
 
     def arcadeDrive(self, speed, rotation):
         # Use DifferentialDrive to control the robot
-        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3)) * .8, -pow(rotation, 3)/2)
+        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3)) * .8, -pow(rotation, 5)/2)
 
     def extendedArcadeDrive1(self, speed, rotation):
         # Use DifferentialDrive to control the robot
-        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3))/2, -pow(rotation, 3)/3)
+        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3))/2, -pow(rotation, 5)/3)
 
     def extendedArcadeDrive2(self, speed, rotation):
         # Use DifferentialDrive to control the robot
-        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3))/3.25, -pow(rotation, 3)/3)
+        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3))/3.25, -pow(rotation, 5)/3)
     
     def extendedArcadeDrive3(self, speed, rotation):
         # Use DifferentialDrive to control the robot
-        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3))/3.75, -pow(rotation, 3)/3)
+        self.robotDrive.arcadeDrive(self.filter.calculate(pow(speed,3))/3.75, -pow(rotation, 5)/3)
 
     def arcadeDriveNoSlew(self, speed, rotation):
         # Use DifferentialDrive to control the robot
         self.robotDrive.arcadeDrive(speed, rotation)
 
+    def stop(self):
+        self.robotDrive.arcadeDrive(0, 0)
 
     def setAutoGoal(self, distance):
         self.autoDistance = distance
 
+    def autoStart(self):
+        self.robotDrive.arcadeDrive(-.5, 0)
+        time.sleep(1)
+
     def autoDrive(self):
-        currentPosition = self.leftDriveFront.getEncoder().getPosition()
-        self.pid_controller.setSetpoint(-self.autoDistance)
+        currentPosition = self.distanceSensor.get_proximity()
+        self.pid_controller.setSetpoint(self.autoDistance)
         pid_output = self.pid_controller.calculate(currentPosition)
 
         delta = pid_output - self.last_output
         if delta > self.slewLimit:
             pid_output = self.last_output + self.slewLimit
 
-        self.arcadeDriveNoSlew(.75 * pid_output, 0)
+        self.robotDrive.arcadeDrive(.75 * pid_output, 0)
         self.last_output = pid_output

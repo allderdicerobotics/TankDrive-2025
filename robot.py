@@ -4,6 +4,8 @@ from subsystems.intakeSubsystem import IntakeSubsystem
 from subsystems.elevatorSubsystem import ElevatorSubsystem
 from commands.drive import DefaultDrive
 from subsystems.carriageSubsystem import CarriageSubsystem
+from subsystems.distanceSensor import DistanceSensor
+from wpimath.filter import SlewRateLimiter
 
 import commands2
 import wpilib           # Used to get the joysticks
@@ -12,6 +14,7 @@ import wpilib.drive     # Used for the DifferentialDrive class
 import rev
 import wpimath.filter            # REV library
 import time
+import playingwithfusion
 
 
 class Robot(wpilib.TimedRobot):
@@ -44,6 +47,7 @@ class Robot(wpilib.TimedRobot):
         self.intake = IntakeSubsystem()
         self.elevator = ElevatorSubsystem()
         self.carriage = CarriageSubsystem()
+        self.distanceSensor = DistanceSensor()
         self.controller = wpilib.PS4Controller(0)
         self.operatorBoard = wpilib.Joystick(1)
 
@@ -72,33 +76,62 @@ class Robot(wpilib.TimedRobot):
         self.stateOff = 10
 
         self.intake.intake.set(0)
+        self.intakeCurrentRaisedSticky = False
+
+        self.analog_channel = wpilib.AnalogInput(0)
 
     def autonomousInit(self):
         self.autoHeight = self.elevatorPositionAutoCoral
-        self.autoDistance = 31.3
+        self.autoDistance = 350
     
         self.elevator.encoder.setPosition(0)
-        self.carriage.desiredAngle = self.carriage.encoder.getPosition()
         self.elevator.desiredPosition = 0
     
         self.drive.leftDriveFront.getEncoder().setPosition(0)
         self.drive.setAutoGoal(self.autoDistance)
+        
+        self.drive.filter = SlewRateLimiter(1)
+
+
+        self.drive.autoStart()
+
+        while self.distanceSensor.get_proximity() > 400:
+            print("1")
+            self.drive.arcadeDriveNoSlew(-.4, 0)
+
+        self.drive.stop()
+        
+        while self.distanceSensor.get_proximity() < 425:
+            print('2')
+            self.drive.arcadeDriveNoSlew(.2, 0)
+
+        self.drive.stop()
             
     def autonomousPeriodic(self):
+        #use stopwatch approach
         self.carriage.autoCarriage(self.carriageAutoPosition)
 
-        if self.carriage.encoder.getPosition() <= self.carriageAutoPosition + .03:
-            self.drive.autoDrive()
+        if self.carriage.encoder.getPosition() <= self.carriageAutoPosition + .03 and self.distanceSensor.get_proximity() < 550:
+            # time.sleep(1.5)
+            self.intake.outTakeAuto()
 
-            if self.drive.leftDriveFront.getEncoder().getPosition() <= self.autoDistance * -1:
-                self.intake.outTakeAuto()
+        print("position: " + str(self.distanceSensor.get_proximity()))
 
-        print(str(self.drive.leftDriveFront.getEncoder().getPosition()))
+
+        # 
+
+        # if self.carriage.encoder.getPosition() <= self.carriageAutoPosition + .03:
+        #     self.drive.autoDrive()
+
+        #     if self.drive.leftDriveFront.getEncoder().getPosition() <= self.autoDistance * -1:
+        #         self.intake.outTakeAuto()
 
     def teleopInit(self):
         self.elevator.encoder.setPosition(0)
         self.carriage.desiredAngle = self.carriage.encoder.getPosition()
         self.elevator.desiredPosition = 0
+
+        self.drive.filter = SlewRateLimiter(2.0)
 
     def teleopPeriodic(self):
         """This function is called periodically during teleoperated mode."""
@@ -135,6 +168,25 @@ class Robot(wpilib.TimedRobot):
         elif self.elevator.encoder.getPosition() >= 50:
             self.drive.extendedArcadeDrive3(self.controller.getLeftY(), self.controller.getRightX())
 
+
+        #Raises current Limit
+
+        # #sticky circle button controls
+        # if self.controller.getCircleButtonPressed() and not self.intakeCurrentRaisedSticky:
+        #     self.intakeCurrentRaisedSticky = True
+
+        # elif self.intakeCurrentRaisedSticky and self.controller.getCircleButtonReleased():
+        #     self.intakeCurrentRaisedSticky = False
+
+        # #raise intake current limit
+        # if self.intakeCurrentRaisedSticky:
+        #     self.intake.raiseCurrentLimit()
+        # else:
+        #     self.intake.lowerCurrentLimit()
+
+        # # self.intake.intake.configure(rev.SparkMaxConfig().smartCurrentLimit(self.intake.CURRENT_LIMIT_THRESHOLD).inverted(True))
+        # print(self.intake.CURRENT_LIMIT_THRESHOLD)
+
         #Manual intake controls
         if self.controller.getR1ButtonPressed():
             self.intake.runIntake()
@@ -144,6 +196,11 @@ class Robot(wpilib.TimedRobot):
         
         if self.controller.getR1ButtonReleased():
             self.intake.stop()
+
+        if self.controller.getCircleButtonPressed():
+            self.intake.runIntakeSlow()
+
+
 
         # Elevator manual controls
         if self.controller.getPOV() == self.DPadUP:
@@ -211,6 +268,8 @@ class Robot(wpilib.TimedRobot):
             if self.controller.getR2ButtonReleased() or self.controller.getL2ButtonReleased():
                 self.carriage.stop()
 
+            
+
         #turns motor power to 0 if current limit surpassed. In future, try to make it go to a safe position if this is triggered
         elif self.carriage.encoder.getPosition() < .15:
             self.atLowerHardStop = True
@@ -220,6 +279,7 @@ class Robot(wpilib.TimedRobot):
             self.atUpperrHardStop = True
             self.carriage.motor.set(0)
 
+        print("Proximity: " + str(self.distanceSensor.get_proximity()))
         
 if __name__ == "__main__":
     wpilib.run(Robot)
