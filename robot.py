@@ -112,6 +112,7 @@ class Robot(wpilib.TimedRobot):
         if self.carriage.encoder.getPosition() <= self.carriageAutoPosition + .03 and self.distanceSensor.get_proximity() < 550:
             # time.sleep(1.5)
             self.intake.outTakeAuto()
+            print("Done")
 
         # 
 

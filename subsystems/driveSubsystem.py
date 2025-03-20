@@ -85,8 +85,8 @@ class DriveSubsystem(Subsystem):
         self.autoDistance = distance
 
     def autoStart(self):
-        self.robotDrive.arcadeDrive(-.5, 0)
-        time.sleep(1)
+        self.robotDrive.arcadeDrive(-.3, 0)
+        time.sleep(2)
 
     def autoDrive(self):
         currentPosition = self.distanceSensor.get_proximity()
