@@ -76,7 +76,7 @@ class Robot(wpilib.TimedRobot):
         self.stateOff = 10
 
         self.intake.intake.set(0)
-        self.intakeCurrentRaisedSticky = False
+        # self.intakeCurrentRaisedSticky = False
 
         self.analog_channel = wpilib.AnalogInput(0)
 
@@ -96,13 +96,11 @@ class Robot(wpilib.TimedRobot):
         self.drive.autoStart()
 
         while self.distanceSensor.get_proximity() > 400:
-            print("1")
             self.drive.arcadeDriveNoSlew(-.4, 0)
 
         self.drive.stop()
         
         while self.distanceSensor.get_proximity() < 425:
-            print('2')
             self.drive.arcadeDriveNoSlew(.2, 0)
 
         self.drive.stop()
@@ -114,9 +112,6 @@ class Robot(wpilib.TimedRobot):
         if self.carriage.encoder.getPosition() <= self.carriageAutoPosition + .03 and self.distanceSensor.get_proximity() < 550:
             # time.sleep(1.5)
             self.intake.outTakeAuto()
-
-        print("position: " + str(self.distanceSensor.get_proximity()))
-
 
         # 
 
@@ -169,13 +164,11 @@ class Robot(wpilib.TimedRobot):
             self.drive.extendedArcadeDrive3(self.controller.getLeftY(), self.controller.getRightX())
 
 
-        #Raises current Limit
-
         # #sticky circle button controls
         # if self.controller.getCircleButtonPressed() and not self.intakeCurrentRaisedSticky:
         #     self.intakeCurrentRaisedSticky = True
 
-        # elif self.intakeCurrentRaisedSticky and self.controller.getCircleButtonReleased():
+        # if self.intakeCurrentRaisedSticky and self.controller.getCircleButtonReleased():
         #     self.intakeCurrentRaisedSticky = False
 
         # #raise intake current limit
@@ -184,7 +177,16 @@ class Robot(wpilib.TimedRobot):
         # else:
         #     self.intake.lowerCurrentLimit()
 
-        # # self.intake.intake.configure(rev.SparkMaxConfig().smartCurrentLimit(self.intake.CURRENT_LIMIT_THRESHOLD).inverted(True))
+        # if self.controller.getRawButton(3):
+        #     print("Changed")
+        #     self.intake.intake.configure(
+        #         rev.SparkMaxConfig().smartCurrentLimit(self.intake.CURRENT_LIMIT_THRESHOLD).inverted(True),
+        #         rev.SparkBase.ResetMode.kResetSafeParameters,
+        #         rev.SparkBase.PersistMode.kPersistParameters
+        #     )
+
+
+        # print(self.intake.intake.getOutputCurrent())
         # print(self.intake.CURRENT_LIMIT_THRESHOLD)
 
         #Manual intake controls
@@ -197,8 +199,8 @@ class Robot(wpilib.TimedRobot):
         if self.controller.getR1ButtonReleased():
             self.intake.stop()
 
-        if self.controller.getCircleButtonPressed():
-            self.intake.runIntakeSlow()
+        # if self.controller.getCircleButtonPressed():
+        #     self.intake.runIntakeSlow()
 
 
 
@@ -278,8 +280,6 @@ class Robot(wpilib.TimedRobot):
         elif self.carriage.encoder.getPosition() > .37:
             self.atUpperrHardStop = True
             self.carriage.motor.set(0)
-
-        print("Proximity: " + str(self.distanceSensor.get_proximity()))
         
 if __name__ == "__main__":
     wpilib.run(Robot)

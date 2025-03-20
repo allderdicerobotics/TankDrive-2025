@@ -33,11 +33,11 @@ class IntakeSubsystem(Subsystem):
         self.intake.set(0)
 
     def runIntakeSlow(self):
-        self.intake.set(-.2)
+        self.intake.set(-.1)
     
     # def raiseCurrentLimit(self):
-    #     if (self.CURRENT_LIMIT_THRESHOLD is not 40):
-    #         self.CURRENT_LIMIT_THRESHOLD = 40
+    #     if (self.CURRENT_LIMIT_THRESHOLD is not 70):
+    #         self.CURRENT_LIMIT_THRESHOLD = 70
     #         self.intakeConfig.smartCurrentLimit(self.CURRENT_LIMIT_THRESHOLD)
 
     # def lowerCurrentLimit(self):
